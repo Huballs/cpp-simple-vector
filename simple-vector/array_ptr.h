@@ -2,6 +2,7 @@
 
 #include <cstdlib>
 #include <algorithm>
+#include <utility>
 
 template <typename Type>
 class ArrayPtr {
@@ -12,16 +13,10 @@ public:
 
     // Создаёт в куче массив из size элементов типа Type.
     // Если size == 0, поле raw_ptr_ должно быть равно nullptr
-    explicit ArrayPtr(size_t size) {
-        if(!size) return;
-        Type* ptr = new Type[size];
-        raw_ptr_ = ptr;
-    }
+    explicit ArrayPtr(size_t size) : raw_ptr_(size ? new Type[size] : nullptr) {}
 
     // Конструктор из сырого указателя, хранящего адрес массива в куче либо nullptr
-    explicit ArrayPtr(Type* raw_ptr) noexcept {
-        raw_ptr_ = raw_ptr;
-    }
+    explicit ArrayPtr(Type* raw_ptr) noexcept : raw_ptr_(raw_ptr) {}
 
     // Запрещаем копирование
     ArrayPtr(const ArrayPtr&) = delete;
@@ -36,9 +31,7 @@ public:
     // Прекращает владением массивом в памяти, возвращает значение адреса массива
     // После вызова метода указатель на массив должен обнулиться
     [[nodiscard]] Type* Release() noexcept {
-        Type* ptr = raw_ptr_;
-        raw_ptr_ = nullptr;
-        return ptr;
+        return std::exchange(raw_ptr_, nullptr);
     }
 
     // Возвращает ссылку на элемент массива с индексом index

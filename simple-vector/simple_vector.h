@@ -28,7 +28,7 @@ public:
     explicit SimpleVector(size_t size)
         : array_(size), size_(size), capacity_(size) {
 
-        std::generate(begin(), end(), [](){return Type();});
+        std::generate(begin(), end(), []{return Type();});
     }
 
     // Создаёт вектор из size элементов, инициализированных значением value
@@ -40,22 +40,19 @@ public:
 
     // Создаёт вектор из std::initializer_list
     SimpleVector(std::initializer_list<Type> init) 
-    : array_(init.size()), size_(init.size()), capacity_(init.size()) {
+        : array_(init.size()), size_(init.size()), capacity_(init.size()) {
 
         std::move(init.begin(), init.end(), begin());
     }
 
-    SimpleVector(const SimpleVector& other) {
-        SimpleVector buffer(other.size_);
-        std::copy(other.begin(), other.end(), buffer.begin());
-        swap(buffer);
+    SimpleVector(const SimpleVector& other) 
+        : array_(other.GetSize()), size_(other.GetSize()), capacity_(other.GetCapacity()){
+
+        std::copy(other.begin(), other.end(), begin());
     }
 
     SimpleVector(SimpleVector&& other) {
-        Resize(other.size_);
-        std::move(other.begin(), other.end(), begin());
-        other.size_ = 0;
-        other.capacity_ = 0;
+        swap(other);
     }
 
     SimpleVector(ReserveProxyObj reserveObj){
@@ -98,7 +95,7 @@ public:
 
     // Сообщает, пустой ли массив
     bool IsEmpty() const noexcept {
-        return !(bool)size_;
+        return !(size_);
     }
 
     // Возвращает константную ссылку на элемент с индексом index
@@ -126,20 +123,15 @@ public:
     // При увеличении размера новые элементы получают значение по умолчанию для типа Type
     void Resize(size_t new_size) {
         if(new_size > GetSize() && new_size > GetCapacity()){
-            ArrayPtr<Type> tmp_array(new_size);
-            std::move(begin(), end(), tmp_array.Get());
-            array_.swap(tmp_array);
-            std::generate(begin()+size_, begin()+new_size, [](){return Type();});
+            Reserve(new_size);
+        } 
+        
+        if (new_size > GetSize() && new_size <= GetCapacity()){
+            std::generate(begin()+size_, begin()+new_size, []{return Type();});
             size_ = new_size;
-            capacity_ = new_size;
-
-        } else if (new_size > GetSize() && new_size <= capacity_){
-            std::generate(begin()+size_, begin()+new_size, [](){return Type();});
-            size_ = new_size;
-
-        } else if (new_size < GetSize()){
-            size_ = new_size;
-        }
+        } 
+        
+        size_ = new_size;
     }
 
     void Reserve(size_t new_capacity){
@@ -157,8 +149,7 @@ public:
         Insert(end(), std::move(item));
     }
     void PushBack(const Type& item) {
-        Type item_ = item;
-        Insert(end(), std::move(item_));
+        Insert(end(), item);
     }
 
     // Вставляет значение value в позицию pos.
@@ -168,22 +159,19 @@ public:
     Iterator Insert(ConstIterator pos,  Type&& value) {
         size_t size = GetSize();
         int pos_ = pos - begin();
+        
         if(size >= GetCapacity()){
-            Resize(size ? size*2 : 1);
-            size_ = size + 1;
-            std::move_backward(begin() + pos_, end()-1, end());
-            *(begin() + pos_) = std::move(value);
-            
-        } else {
-            std::move_backward(begin() + pos_, end(), end() + 1);
-            *(begin() + pos_) = std::move(value);
-            ++size_;
-        }
+           Reserve(size ? size*2 : 1);
+        } 
+
+        std::move_backward(begin() + pos_, end(), end() + 1);
+        *(begin() + pos_) = std::move(value);
+        ++size_;
+        
         return begin() + pos_;
     }
     Iterator Insert(ConstIterator pos, const Type& value) {
-        Type value_ = value;
-        return Insert(pos, std::move(value_));
+        return Insert(pos, std::move(value));
     }
 
     // "Удаляет" последний элемент вектора. Вектор не должен быть пустым
