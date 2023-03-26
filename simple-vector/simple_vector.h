@@ -95,7 +95,7 @@ public:
 
     // Сообщает, пустой ли массив
     bool IsEmpty() const noexcept {
-        return !(size_);
+        return (size_ == 0);
     }
 
     // Возвращает константную ссылку на элемент с индексом index
@@ -122,11 +122,11 @@ public:
     // Изменяет размер массива.
     // При увеличении размера новые элементы получают значение по умолчанию для типа Type
     void Resize(size_t new_size) {
-        if(new_size > GetSize() && new_size > GetCapacity()){
+        if(new_size > GetCapacity()){
             Reserve(new_size);
         } 
         
-        if (new_size > GetSize() && new_size <= GetCapacity()){
+        if (new_size > GetSize()){
             std::generate(begin()+size_, begin()+new_size, []{return Type();});
             size_ = new_size;
         } 
